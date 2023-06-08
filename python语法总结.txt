@@ -1,0 +1,1447 @@
+************************************
+LOB类型转str    
+.read()       *可能出现很多\r\n   下述处理方法
+.replace('\r\n',' ').replace('\u3000',' ') 
+************************************
+str切片：
+a = STD_SECU_CODE.split('.')[0]   #点之前的拿出来
+prod = 'PD'+a    # 再组合
+************************************
+遇到大大于1000传不进去参数的问题
+exp:
+
+    # 每1000条数据为一组 进行分组
+    SK_F_BMPK_ID_FZ = pd.DataFrame(ans_bondhold['SK_F_BMPK_ID'].unique()).reset_index().rename(columns={'index':'ZUHAO',0:'SK_F_BMPK_ID'})
+    SK_F_BMPK_ID_FZ['ZUHAO'] = SK_F_BMPK_ID_FZ['ZUHAO'].apply(lambda x:x//1000)
+    max_index = int(SK_F_BMPK_ID_FZ['ZUHAO'].max())
+    # 分组传参
+    for i in range(max_index+1):
+        SK_F_BMPK_ID = ','.join(list(SK_F_BMPK_ID_FZ.loc[(SK_F_BMPK_ID_FZ.ZUHAO==i),'SK_F_BMPK_ID']))
+        ans_bondquote_b = get_tab_t02_bondquote(SK_F_BMPK_ID=SK_F_BMPK_ID, D_START_DATE=D_START_DATE, D_END_DATE=D_END_DATE,L_OUT_FIELDS=['TRADE_DT', 'CLOSING_NET', 'SK_F_BMPK_ID'])
+        # 将新的数据合并到下方
+        ans_bondquote = pd.concat([ans_bondquote,ans_bondquote_b])
+
+************************************
+dataframe删除指定列
+	ans = ans.drop(ans.columns[[0,1,2]],axis=1)
+	columns中是列索引   axis=1  列操作
+# 删除指定列--按照列名
+	ans = ans .drop(['行业1','行业2','行业3','行业4','行业5'], 1)       0表示行， 1表示列
+	df.drop('column_name', axis=1, inplace=True)      要删除列而不必重新分配df
+# 删除行业名称为“合计”的那一行
+    	pos_detail = pos_detail.drop(pos_detail[pos_detail['INST_MODE']=='合计'].index)
+# 删除有nan值的行
+	data.dropna(axis=0,how='any')
+# 删除全部是nan值的行
+	data.dropna(axis=0,how='all')
+# 删除0列是1，1列是nan的行（两个条件判断nan并删除）
+	pos_detail.drop(pos_detail[(pos_detail[0]==1)&(np.isnan(pos_detail[1]))].index)
+
+
+************************************
+
+df.isnull().any() #用来判断某列是否有缺失值
+df.isnull().all() #用来判断某列是否全部为空值
+
+************************************
+时间转换为字符串
+	.strftime('%Y%m%d'))
+
+字符串转换为时间
+inp_date = datetime.datetime.strptime(input_date, '%Y%m%d')
+************************************
+dataframe 去重
+	df.drop_duplicates(keep=False)     False 不保留重复行
+series 去重
+	df['A'].drop_duplicates(keep=False)      同上
+************************************
+dataframe 修改列名
+	.rename(columns={'A':'a','B':'b'})
+
+************************************
+时间函数   未来一个月
+
+import datetime
+from dateutil.relativedelta import relativedelta
+
+	(datetime.datetime.strptime(当前日期字符串,'%Y%m%d')+relativedelta(months=+1)).strftime('%Y%m%d')
+
+************************************
+# 日期减两天
+riskparity = riskparity['DATE'].map(lambda x:(datetime.datetime.strptime(x,'%Y%m%d')+datetime.timedelta(days=-2)).strftime('%Y%m%d'))
+************************************
+ # 周日日期转为周五日期
+ riskparity['DATE'] = riskparity['DATE'].map(lambda x:(datetime.datetime.strptime(x,'%Y%m%d')+datetime.timedelta(days=calendar.FRIDAY - datetime.datetime.strptime(str(x),'%Y%m%d').weekday() )).strftime('%Y%m%d'))
+
+
+
+*********************************
+series  str转int
+	ans['XXXX'].astype('int')
+
+*********************************
+pandas groupby 分组取每组的前几行记录方法
+	.sort_values(['SK_F_STOCK','CHG_DT'],ascending=[1,0])
+	.groupby(by='SK_F_STOCK').head(1)
+
+***********************************
+条件筛选某些行数据
+ans[(ans['START_DT']==D_START_DATE)&(ans['END_DT']==D_END_DATE)]
+
+***********************************
+dataframe  拼接成<= 、 >=  的形势
+            ans['PJS'] = ans['HOLDING_LOWER'].astype('int').astype('str')+ans['HOLDING_UNIT']
+            ans['HOLDING_UPPER'] = ans['HOLDING_UPPER'].map(lambda x:'' if  np.isnan(x) else '<'+str(int(x)))
+            ans['HOLDING_UNIT'] = ans.apply(lambda x:'' if x['HOLDING_UPPER'] == '' else ans['HOLDING_UNIT'],axis=1)
+            ans['PJ'] = ans['PJS']+\
+                        '<=X'+ ans['HOLDING_UPPER']+ans['HOLDING_UNIT'] +\
+                        ': '+ans['RATE_COST_UPPER'].map(lambda x:("%.4f")%x ).astype('str')+ans['FEE_UNIT']
+            PJ = ans['PJ']
+            redemprate = '; \n'.join(list(PJ.drop_duplicates(keep=False)))
+
+****************************************
+list去掉None
+	','.join(list(filter(None,list(ans['XXXX']))))
+
+****************************************
+series 中的日期全部转为int
+    df.[''].dt.strftime('%Y%m%d')
+
+****************************************
+取季末数据，先把时间后四位截取出来
+pos_detail = pos_detail[(pos_detail['日期末']=='0331')|( pos_detail['日期末']=='0630' )|( pos_detail['日期末']=='0930' )|( pos_detail['日期末']=='1231')]
+
+****************************************
+前N组的数据平均，每个日期算一个
+        #  取近n组数的算术平均
+        for index,row  in pos_detail.iterrows():
+            if row['BUSS_DT'] < D_START_DATE_B:
+                break
+            else:
+                pos_detail.loc[index,'MEAN'] = pos_detail.loc[index:index+int(E_CYCLEDAYS)-1,'IND_VALUE'].mean()
+
+****************************************
+一个字符串中给每个逗号分隔的元素加上CO
+        SK_FUND_COMPANY = SK_FUND_COMPANY.split(',')
+        for i in range(len(SK_FUND_COMPANY)):
+            SK_FUND_COMPANY[i] = 'CO'+SK_FUND_COMPANY[i]
+
+
+
+****************************************
+20200101   8位时间转换成 日，周，月 ，季，年
+
+日度
+        pos_detail['时间'] = pos_detail['时间'].map(lambda x:str(x)[0:4]+'年'+str(x)[4:6]+'月'+str(x)[6:]+'日')
+周度
+        pos_detail['时间'] = pos_detail['时间'].map(lambda x:str(x)[0:4]+'年'+str(x)[4:6]+'月'+str(x)[6:]+'日'+' 当周')    
+		如何取到具体的周几看自己写的TIME 函数
+月度
+        pos_detail['时间'] = pos_detail['时间'].map(lambda x:str(x)[0:4]+'年'+str(x)[4:6]+'月')
+  
+
+季度
+        pos_detail['时间'] = pos_detail['时间'].astype('str')
+        pos_detail['日期末'] = pos_detail['时间'].map(lambda x:x[4:])
+        pos_detail = pos_detail[(pos_detail['日期末']=='0331')|( pos_detail['日期末']=='0630' )|( pos_detail['日期末']=='0930' )|( pos_detail['日期末']=='1231')]
+        pos_detail['时间'] = pos_detail['时间'].map(lambda x:x[0:4]+'年'+x[4:6]+'月')
+
+年度
+        pos_detail['时间'] = pos_detail['时间'].map(lambda x:x[0:4]+'年')
+
+
+*************************************
+将一列为空的值用另一列对应的值填充
+方法一：
+    pos_detail['value'][pos_detail['value'].isnull()] =pos_detail['time'][pos_detail['value'].isnull()]
+方法二：
+    pos_detail.loc[pos_detail[pos_detail['value'].isnull()].index,'value'] = pos_detail.loc[pos_detail[pos_detail['value'].isnull()].index,'time']
+
+出问题尝试加copy()
+
+
+*************************************
+pos_detail.shape[1]   有多少列
+
+*************************************
+时间格式替换为20200101样式的
+
+pos_detail['时间'] = pos_detail['时间'].astype('str').str.replace('-','').astype('int')
+
+*************************************
+pycharm 输出格式矫正
+
+#设置显示的最大列、宽等参数，消除打印不完全中间的省略号
+pd.set_option("display.width",1000)
+#加了这一行那表格就不会分段出现了
+pd.set_option("display.width",1000)
+#显示所有列
+pd.set_option("display.max_columns",None)
+#显示所有行
+pd.set_option("display.max_rows",None)
+# 列标题对齐
+pd.set_option('display.unicode.ambiguous_as_wide', True)
+pd.set_option('display.unicode.east_asian_width', True)
+
+*************************************
+DataFrame中存在重复的行或者几行中某几列的值重复，这时候需要去掉重复行，示例如下：
+
+data.drop_duplicates(subset=['A','B'],keep='first',inplace=True)
+代码中subset对应的值是列名，表示只考虑这两列，将这两列对应值相同的行进行去重。默认值为subset=None表示考虑所有列。
+
+keep='first'表示保留第一次出现的重复行，是默认值。keep另外两个取值为"last"和False，分别表示保留最后一次出现的重复行和去除所有重复行。
+
+inplace=True表示直接在原来的DataFrame上删除重复项，而默认值False表示生成一个副本。
+*************************************
+两列分组，分组数据量不符合条件的，删掉
+df = pd.DataFrame([[1,2,7],[1,2,6],[1,3,5]]).rename(columns={0:'股票',1:'方向',2:'数值'})
+fz = df.groupby(['股票','方向']).agg('count')
+fz = fz[fz['数值']>=2]
+fz = fz.reset_index().rename(columns={'数值':'行数'})
+df = pd.merge(left=fz,right=df,on=['股票','方向'],how='left')[['股票','方向','数值']]
+*************************************
+求 协方差
+a = pd.DataFrame([[1,2],[4,1]])
+cov = a[0].cov(a[1])
+*************************************
+解方程组
+from sympy import *
+
+x,y,z = symbols('x y z')
+a = solve([x+y-3,x+z-4,y+z-5],[x,y,z])   # 写入需要解的方程体
+print(a)  # 打印出结果
+
+*************************************
+dataframe一列保留两位小数
+pos_detail['value'] = round(pos_detail['value'],2)
+*************************************
+    # 使用 fsolve 解方程组
+    def f(x):
+        x0 = float(x[0])
+        x1 = float(x[1])
+        x2 = float(x[2])
+        x3 = float(x[3])
+        return [
+            x0+x1+x2-1,
+            ((x0 ** 2) * (R_ASH_STD ** 2) + x0 * x1 * R_ASH_R_USSH_COV + x0 * x2 * R_ASH_R_ZZ_COV) / ((x0 ** 2) * (R_ASH_STD ** 2) + (x1 ** 2) * (R_USSH_STD ** 2) + (x2 ** 2) * (R_ZZ_STD ** 2) + (2 * x0 * x1 * R_ASH_R_USSH_COV) + (2 * x0 * x2 * R_ASH_R_ZZ_COV) + (2 * x1 * x2 * R_USSH_R_ZZ_COV)) - 1 / 3,
+            ((x1 ** 2) * (R_USSH_STD ** 2) + x0 * x1 * R_ASH_R_USSH_COV + x1 * x2 * R_USSH_R_ZZ_COV) / ((x0 ** 2) * (R_ASH_STD ** 2) + (x1 ** 2) * (R_USSH_STD ** 2) + (x2 ** 2) * (R_ZZ_STD ** 2) + (2 * x0 * x1 * R_ASH_R_USSH_COV) + (2 * x0 * x2 * R_ASH_R_ZZ_COV) + (2 * x1 * x2 * R_USSH_R_ZZ_COV)) - 1 / 3,
+            ((x2 ** 2) * (R_ZZ_STD ** 2) + x0 * x2 * R_ASH_R_ZZ_COV + x1 * x2 * R_USSH_R_ZZ_COV) / ((x0 ** 2) * (R_ASH_STD ** 2) + (x1 ** 2) * (R_USSH_STD ** 2) + (x2 ** 2) * (R_ZZ_STD ** 2) + (2 * x0 * x1 * R_ASH_R_USSH_COV) + (2 * x0 * x2 * R_ASH_R_ZZ_COV) + (2 * x1 * x2 * R_USSH_R_ZZ_COV)) - 1 / 3,
+        ]
+
+    a = fsolve(f, [0.05,0.05,0.9,0])     # 先验经验设定初始值
+    a = pd.DataFrame(a).T       # fsolve结果是array   ,需要转置变成一行
+*************************************
+        # 按月聚合
+pos_detail = pos_detail.groupby(by='月份').agg({'value':'mean'}).reset_index()
+
+*************************************
+dataframe 一列前两个字符串为‘60’的拿出来    ,     pandas里面就有slice（）这个函数
+df ['这一列'] = df['列名'].str.slice(0,2)
+df  =  df[df['这一列']=='60' ]
+*************************************
+python 落地有文字 需要解决编码问题
+
+
+import sys
+from importlib import reload
+reload(sys)
+
+fundquery['FUND_COMPANY_NAME'] = fundquery.apply(lambda x:x['FUND_COMPANY_NAME'].encode(encoding='utf-8'),axis=1)
+
+还是不行，可能是pycharm默认编码的问题，尝试多加两行
+import sys
+from importlib import reload
+reload(sys)
+import os
+os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
+
+
+*************************************
+最大的索引值
+用len(df)
+
+*************************************
+
+判断float 是不是空，
+np.isnan(x)
+
+
+*************************************
+series 是否有 “是”
+
+if '是' in ans[ans['PER_CODE'] == row['PER_CODE']]['WHETHER_INCUMBENT'].values:
+if '是' in ans[ans['PER_CODE'] == row['PER_CODE']]['WHETHER_INCUMBENT'].tolist()：
+
+*************************************
+分组取某一列最大值的行，在进行列提取或者其他计算
+
+pos_detail.iloc[pos_detail.groupby(by='时间')['标普500指数市盈率'].idxmax()]
+
+
+*************************************
+保留小数，有时候需要先统一一下格式
+
+pos_detail['value'] = round(pos_detail['value'].astype('float'), 2)
+
+*************************************
+ 
+#使用filter()函数，删除列表中的None值
+res = list(filter(None, test_list)) 
+*************************************
+删除df里某个字段为None的所在行
+df.drop(df[df['字段'].astype('str')=='None'].index)
+
+
+*************************************
+分组判断是否有空值——有聚合的情况
+1：加一列，空值对应为1
+	        pos_detail['是否为空'] = pos_detail['货币净投放（周）'].map(lambda x:1 if np.isnan(x) else 0)    
+2：聚合，有空值的一组新加的一列大于0
+	        pos_detail = pos_detail.groupby(by='时间').agg({'时间': 'max', '货币净投放（周）': 'sum','是否为空':'sum'}).reset_index(drop=True).sort_values(by='时间',ascending=False).reset_index(drop=True)
+3： 判断  大于0 的组存在空值
+	        pos_detail['货币净投放（周）'] = pos_detail.apply(lambda x:np.nan if x['是否为空']>0 else x['货币净投放（周）'] ,axis=1)
+
+
+*************************************
+日频数据，计算同比
+	——利用时间设置当年和上一年的日期，形式为   629，132  （月日）
+	利用日期进行匹配
+
+pos_detail_p['一年前日期'] = pos_detail_p['一年前时间'].map(lambda x:int(str(x)[4:8]) )
+pos_detail['日期'] = pos_detail['时间'].map(lambda x:int(str(x)[4:8]) )
+#当前日期df中插入一年前日期df中的一年前日期（因为要根据日期merge）,用小于等于的逻辑，拿到一年前有数据的日期
+pos_detail['一年前日期'] = pos_detail['日期'].map(lambda x: pos_detail_p[pos_detail_p['一年前日期']<=x].head(1)['一年前日期'].iloc[0])   
+
+*************************************
+df里面根据条件修改某一列的某些行
+df.loc[条件,'列名']=value
+
+
+*************************************
+df一行求平均，存在nan
+有nan就设置为空
+df[''] = pos_detail.apply(lambda x:x.mean() if not x.isnull().any() else np.nan  ,axis=1)  
+有nan  就去掉nan，其余的作平均
+df[''] = pos_detail.apply(lambda x:x.mean(),axis=1)
+df[''] = pos_detail.apply(lambda x:np.nanmean(x)  ,axis=1)
+
+
+*************************************
+pad/ffill：用前一个非缺失值去填充该缺失值
+backfill/bfill：用下一个非缺失值填充该缺失值
+None：指定一个值去替换缺失值（缺省默认这种方式)
+	如下：
+	pos_detail = pd.merge(left=timetog, right=pos_detail, on='时间', how='left')
+	pos_detail = pos_detail.fillna(method='bfill')
+
+*************************************
+截取行
+df.iloc[[0,2,4]]
+*************************************
+df.loc[0:25]     0~25
+df.iloc[0:25]     0~24
+
+*************************************
+dataframe中的nan替换为None
+ans_quo = ans_quo.where(ans_quo.notnull(), None)
+
+
+*************************************
+得到的字符串两端带有双引号，可以使用eval（）函数去除。
+
+b=eval(a)
+
+*************************************
+多个名称修改
+.rename(columns={'date':'日期','close':'hs300_index'})
+
+*************************************
+批量定义变量，然后赋值
+for i in range(0,40):
+	locals()['hs300_mean_p2djmg'+str(-i)] = ans_data[ans_data['p2d成交净买额(亿)']<=-i]
+
+*************************************
+对某一列切片
+wimi_data['日期'] = wimi_data['时间'].str.slice(0,10)
+
+*************************************
+前一天
+last_day = (datetime.datetime.now()+datetime.timedelta(days=-1)).strftime('%Y-%m-%d ')   
+last_day = last_day + str('04:01')
+
+*************************************
+# "dataframe   模糊查找代码"
+# aaa = ak.stock_us_spot_em()
+# aa = aaa.loc[aaa['名称'].str.contains('DJI')]
+*************************************
+csv读取中文乱码
+encoding='gbk'
+*************************************
+pandas.read_excel(‘xxx.xlsx’)会报错。
+可以安装旧版xlrd，在cmd中运行：
+pip uninstall xlrd
+pip install xlrd==1.2.0
+也可以用openpyxl代替xlrd打开.xlsx文件：
+df=pandas.read_excel('data.xlsx',engine='openpyxl')
+*************************************
+调整列位置
+order = ['','','']
+ans = ans[order]
+*************************************
+放到不同的sheet里
+"将周涨幅结果放到五个sheet里"
+writer = pd.ExcelWriter('美股策略周涨幅.xlsx')
+for i in range(1,6):
+    locals()['id_group_'+str(i)].to_excel(writer,sheet_name='sheet{}'.format(i), index=False) 
+writer.save()
+*************************************
+dataframe小数变为百分数
+
+id_group_n['周涨幅'] = id_group_n['周涨幅'].apply(lambda x: '%.2f%%' % (x*100))
+
+*************************************
+def get_last_wxday(input_date,n):
+    "获取输入日期的上周几"
+    inp_date = datetime.datetime.strptime(input_date, '%Y%m%d')
+    week_n = inp_date.weekday()+1
+    date_ans = inp_date - datetime.timedelta(days=week_n + 7 - n )
+    date_ans = date_ans.strftime('%Y%m%d')
+    return date_ans
+
+*************************************
+def get_wxday(input_date,n):
+    "获取输入日期的本周几"
+    inp_date = datetime.datetime.strptime(input_date, '%Y%m%d')
+    week_n = inp_date.weekday()+1
+    date_ans = inp_date - datetime.timedelta(days=week_n - n )
+    date_ans = date_ans.strftime('%Y%m%d')
+    return date_ans
+
+
+*************************************
+批量修改列名——加个字符
+
+w_list = pd.DataFrame(fund_data_hz_w.keys())
+w_list[0] = w_list[0] +'周'
+w_list =list(w_list[0]) 
+fund_data_hz_w.columns=w_list
+*************************************
+format  保留小数
+
+{:.2f}.format(   )
+
+*************************************
+字符串前面补0
+i = str(i).zfill(6)
+
+*************************************
+股票、基金代码前补0
+
+def bu_zero(fund_id,id_id):
+    "基金代码前面补0"
+    "fund_id：df名称  id_id:需要修改的列"
+    fund_id['{}'.format(id_id)] = fund_id['{}'.format(id_id)].map(lambda x:str(x).zfill(6))
+    return fund_id
+
+
+
+def bu_zero(fund_id,id_id):
+    "基金代码前面补0"
+    "fund_id：df名称  id_id:需要修改的列"
+    fund_id['{}'.format(id_id)] = fund_id['{}'.format(id_id)].map(lambda x:'00000'+x if len(x)==1 else
+                                      ('0000'+x if len(x)==2 else 
+                                       ('000'+x if len(x)==3 else
+                                        ('00'+x if len(x)==4 else
+                                         ('0'+x if len(x)==5 else x)))))
+    return fund_id
+
+*************************************
+res 中每一个元素都是一个df，可以用下方的方法整合成一个df
+res = pd.concat(res)   
+
+
+
+
+***************************************************************************************************************
+ 给西西的特定代码的基金累计净值
+
+"国内基金数据  AVE 当日"
+import akshare as ak
+import pandas as pd
+import time 
+from matplotlib import pyplot as plt 
+import numpy as np
+import datetime
+now_day = datetime.datetime.now().strftime('%Y%m%d')
+
+
+def bu_zero(fund_id,id_id):
+    "基金代码前面补0"
+    "fund_id：df名称  id_id:需要修改的列"
+    fund_id['{}'.format(id_id)] = fund_id['{}'.format(id_id)].map(lambda x:str(x).zfill(6))
+    return fund_id
+
+
+fund_id = pd.read_excel('临时历史数据0214.xlsx',engine='openpyxl')
+fund_id = bu_zero(fund_id,'id')
+
+
+fund_data_hz = pd.DataFrame()
+for index,row  in fund_id.iterrows():
+    fund_data = ak.fund_em_open_fund_info(fund=row['id'], indicator="累计净值走势").sort_values(['净值日期'],ascending=[0]).reset_index(drop=True)
+    fund_data['id'] = row['id']
+    fund_data_hz = fund_data_hz.append(fund_data)
+    print(index,row['id'])
+    
+
+
+fund_data_hz = fund_data_hz.reset_index(drop=True)
+fund_data_hz = pd.merge(left=fund_data_hz,right=fund_id,on='id')
+fund_data_hz.to_excel('临时历史数据_岳.xlsx'.format(now_day))    
+
+
+***************************************************************************************************************
+F分布 the critical values    
+"0.05 level of significance(α)"
+
+from scipy.stats import f 
+print(f.ppf(.025,119,119))
+print(f.ppf(.975,119,119))
+
+
+chi-square分布 the critical values   
+"0.05 level of significance(α)"
+
+from scipy.stats import chi2
+print(chi2.ppf(.05,9))
+
+p-value用cdf ——t.cdf  f.cdf  chi2.cdf
+
+from scipy.stats import t 
+print((1-t.cdf(2.664,34))*2)
+
+
+***************************************************************************************************************
+分组错位  ：GroupBy 和 Shift实现 Pandas分组错位
+df1['x_pre']=df1.groupby('CARID')['x'].shift(1)
+df1['x_next']=df1.groupby('CARID')['x'].shift(-1)
+
+df1['y_pre']=df1.groupby('CARID')['y'].shift(1)
+df1['y_next']=df1.groupby('CARID')['y'].shift(-1)
+
+#sort_values一开始就要做好，不然groupby之后取shift不是原来的顺序。可以全部统一，如果爬取数据的时候就是这样的规则和顺序，则可以省略sort_values
+assets_chg = stock_financial_reports[['Year','stock_id','Total Assets']].sort_values(['stock_id','Year'],ascending=[1,0])
+assets_chg['last_TotalAssets'] = assets_chg.sort_values(['stock_id','Year'],ascending=[1,0]).groupby(['stock_id'])['Total Assets'].shift(-1)
+
+
+***************************************************************************************************************
+#将某一列移动到最右边
+ans = id_group_d_1.copy()  
+zzf = ans.pop('周涨幅')
+ans['周涨幅'] = zzf
+
+#或者 使用insert插入到指定位置
+
+ans = id_group_d_1.copy()  
+#zzf = ans.pop('代码')    #pop会将这一列截取出来，所以这行代码存在会让df只是简单的移动某一列，如果没有这行代码，下方会出现两个同名列
+ans.insert(ans.shape[1],'代码',zzf,allow_duplicates=True)    
+ 
+***************************************************************************************************************
+#警告过滤
+import warnings
+warnings.filterwarnings('ignore') 
+
+***************************************************************************************************************
+#初始化类的属性
+__init__
+
+#class中 super理解为继承父类的所有属性：ChildClass继承ParentClass的所有属性，并在其中添加了额外的 value3 属性。调用 super().__init__(value1, value2) 可以访问父类的 __init__ 方法，并将其初始化为 value1 和 value2。
+class ParentClass:
+    def __init__(self, value1, value2):
+        self.value1 = value1
+        self.value2 = value2
+ 
+class ChildClass(ParentClass):
+    def __init__(self, value1, value2, value3):
+        super().__init__(value1, value2)
+        self.value3 = value3
+
+
+**************************************************************************************************************
+
+#查看函数get_functions_info
+print('__doc__:   ',get_functions_info.__doc__)
+print('__name__:  ',get_functions_info.__name__)
+print('__module__:  ',get_functions_info.__module__)
+
+
+**************************************************************************************************************
+#大批量处理数据遇到报错不停止继续
+
+import random
+import time
+
+index = 0
+for i in range(1000):
+    try:
+        print(index,index/random.randint(0,1))
+        index += 1
+        time.sleep(2)
+    except:
+        time.sleep(2)
+
+**************************************************************************************************************
+#修改host，提升登录github速度
+140.82.114.4  github.com
+199.232.5.194 github.global.ssl.fastly.net
+
+
+**************************************************************************************************************
+#命令行zip压缩
+aip -r evaluation-py.zip evaluation-py
+**************************************************************************************************************
+#命令行zip解压
+unzip xxx.zip
+**************************************************************************************************************
+#写好包,注意包内需要有__init__文件
+#查询一下setup怎么写，很简单，放在整个包外面
+#执行setup.py，生成dist文件夹和其中的tar.gz文件（也可以生成wheel文件，安装过程更快）可以进行本地安装。
+python setup.py sdist
+或者
+python setup.py bdist_wheel
+#安装自定义开发的包：安装dist中的 .tar.gz 文件,将文件放到pip install执行的目录下
+pip install xxx.tar.gz
+
+#如果想要上传到pypi，要进入dist文件夹中，输入。期间也会让输入pypi账号密码，所以要先去注册
+twine upload dist/*
+
+
+
+**************************************************************************************************************
+#setup.py
+
+from setuptools import setup,find_packages
+
+setup(name='evaluation',
+      version='1.1.0',
+      description='evaluation',
+      packages=find_packages(),
+      author='yuejingyuan',
+      author_email='yuejingyuan@orientsec.com.cn',
+      install_requires=['empyrical']
+      )
+**************************************************************************************************************
+#命令行ipynb转py
+
+jupyter nbconvert --to script xxx.ipynb 
+
+
+**************************************************************************************************************
+#上传git
+pycharm 当中git clone
+新建分支（和远程分支名字相同）
+修改代码，同步到本地
+git add .
+git commit -m "jira号"
+git push origin [远程分支]    
+
+#git上有特定分支，可以先clone 分支，修改之后再上传
+git clone -b [分支名] http://git...
+*******************
+
+直接在pycharm里面操作，不要直接复制文件夹
+
+1：把项目放到workspace下
+2：切换项目文件夹下的分支   git checkout
+3：添加那些改动过的文件，然后  add
+4：commit   输入jira号
+5：push
+
+*******************
+#vscode 中 第一次要配置  全局的
+$ git config --global user.name yuejinayuan
+$ git config --global user.email yuejingyuan@orientsec.com.cn
+# 对单个项目
+git config user.name Alanyue0830
+git config user.email pdwjzyjy@gmail.com
+#查看 config
+git config --global --list
+git config --local --list
+#终端出现END  按 q 退出
+#最妥善的方法是从远程clone对应的分支，修改后add commit push上去
+git push -u origin master
+
+
+
+
+
+
+
+**************************************************************************************************************
+
+
+
+
+
+#获取镜像：从 Docker 镜像仓库获取镜像的命令是 docker pull
+$ docker pull [选项] [Docker Registry 地址[:端口号]/]仓库名[:标签]
+$ docker pull ubuntu:18.04
+#无镜像地址默认docker.io    无用户名默认library 官方镜像
+#镜像加速 不同系统下配置
+
+#列出镜像 ：只显示顶层镜像， 显示中间层需要加-a 参数  $ docker image ls -a
+$ docker image ls
+REPOSITORY           TAG                 IMAGE ID            CREATED             SIZE
+redis                latest              5f515359c7f8        5 days ago          183 MB
+nginx                latest              05a60462f8ba        5 days ago          181 MB
+mongo                3.2                 fe9198c04d62        5 days ago          342 MB
+<none>               <none>              00285df0df87        5 days ago          342 MB
+ubuntu               18.04               329ed837d508        3 days ago          63.3MB
+ubuntu               bionic              329ed837d508        3 days ago          63.3MB
+
+通过 docker system df 命令来便捷的查看镜像、容器、数据卷所占用的空间
+$ docker system df
+
+TYPE                TOTAL               ACTIVE              SIZE                RECLAIMABLE
+Images              24                  0                   1.992GB             1.992GB (100%)
+Containers          1                   0                   62.82MB             62.82MB (100%)
+Local Volumes       9                   0                   652.2MB             652.2MB (100%)
+Build Cache                                                 0B                  0B
+
+#虚悬镜像：无标签镜像。docker pull 新版本镜像下载，仓库名和标签转移，旧镜像的变成none。
+# docker build 构建镜像，新旧镜像同名，旧镜像名称被取消。
+#dangling=true   只显示tag为空的镜像，默认为false
+$ docker image ls -f dangling=true
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+<none>              <none>              00285df0df87        5 days ago          342 MB
+
+#删除虚悬镜像
+$ docker image prune
+#或者
+$ docker image rm $(docker image ls -q -f dangling=true )
+
+
+#中间层镜像
+$ docker image ls -a
+#显示的无标签镜像是中间层不是虚悬镜像，不能删除
+
+#根据仓库名列出镜像
+$ docker image ls ubuntu
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+ubuntu              18.04               329ed837d508        3 days ago          63.3MB
+ubuntu              bionic              329ed837d508        3 days ago          63.3MB
+
+#列出特定的某个镜像，也就是说指定仓库名和标签
+$ docker image ls ubuntu:18.04
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+ubuntu              18.04               329ed837d508        3 days ago          63.3MB
+
+#过滤器filter，-f    since 之后  before 之前
+#mongo:3.2 之后建立的镜像   
+$ docker image ls -f since=mongo:3.2
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+redis               latest              5f515359c7f8        5 days ago          183 MB
+nginx               latest              05a60462f8ba        5 days ago          181 MB
+
+#通过 LABEL 来过滤
+$ docker image ls -f label=com.example.version=0.1
+...
+
+#显示ID
+$ docker image ls -q
+5f515359c7f8
+05a60462f8ba
+fe9198c04d62
+00285df0df87
+329ed837d508
+329ed837d508
+
+
+#列出镜像结果，并且只包含镜像ID和仓库名
+$ docker image ls --format "{{.ID}}: {{.Repository}}"
+5f515359c7f8: redis
+05a60462f8ba: nginx
+fe9198c04d62: mongo
+00285df0df87: <none>
+329ed837d508: ubuntu
+329ed837d508: ubuntu
+
+#以表格等距显示，并且有标题行，和默认一样，不过自己定义列
+$ docker image ls --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}"
+IMAGE ID            REPOSITORY          TAG
+5f515359c7f8        redis               latest
+05a60462f8ba        nginx               latest
+fe9198c04d62        mongo               3.2
+00285df0df87        <none>              <none>
+329ed837d508        ubuntu              18.04
+329ed837d508        ubuntu              bionic
+
+#删除本地镜像
+$ docker image rm [选项] <镜像1> [<镜像2> ...]
+#Untagged   取消所有妈祖要求的标签，当镜像有多个标签，只是删除了标签，不会触发delet ，但如果其他镜像依赖这一层，也不会删除。
+
+#删除所有仓库名为 redis 的镜像
+$ docker image rm $(docker image ls -q redis)
+#删除所有在 mongo:3.2 之前的镜像
+$ docker image rm $(docker image ls -q -f before=mongo:3.2)
+
+#dockerfile
+
+#用 nginx 镜像启动一个容器，命名为 webserver，并且映射了 80 端口，这样我们可以用浏览器去访问这个 nginx 服务器
+$ docker run --name webserver -d -p 80:80 nginx
+#修改显示页面，一种可以使用docker exec进入容器修改内容，改动容器存储层之后docker commit保存下来形成镜像，另一种利用dockerfile形成镜像. docker commit要慎用，可能会导致很多文件改动和添加。
+
+#使用 docker exec 命令进入容器，修改其内容
+$ docker exec -it webserver bash
+root@3729b97e8226:/# echo '<h1>Hello, Docker!</h1>' > /usr/share/nginx/html/index.html
+root@3729b97e8226:/# exit
+exit
+
+#修改了容器的文件，也就是改动了容器的存储层。我们可以通过 docker diff 命令看到具体的改动
+$ docker diff webserver
+C /root
+A /root/.bash_history
+C /run
+C /usr
+C /usr/share
+C /usr/share/nginx
+C /usr/share/nginx/html
+C /usr/share/nginx/html/index.html
+C /var
+C /var/cache
+C /var/cache/nginx
+A /var/cache/nginx/client_temp
+A /var/cache/nginx/fastcgi_temp
+A /var/cache/nginx/proxy_temp
+A /var/cache/nginx/scgi_temp
+A /var/cache/nginx/uwsgi_temp
+
+
+#将容器保存为镜像   --author 是指定修改的作者，而 --message 则是记录本次修改的内容
+$ docker commit \
+    --author "Tao Wang <twang2218@gmail.com>" \    
+    --message "修改了默认网页" \
+    webserver \
+    nginx:v2
+sha256:07e33465974800ce65751acc2s79adc6ed2dc5ed4e0838f8b86f0c87aa1795214
+
+#docker history 具体查看镜像内的历史记录，如果比较 nginx:latest 的历史记录
+$ docker history nginx:v2
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
+07e334659748        54 seconds ago      nginx -g daemon off;                            95 B                修改了默认网页
+e43d811ce2f4        4 weeks ago         /bin/sh -c #(nop)  CMD ["nginx" "-g" "daemon    0 B
+<missing>           4 weeks ago         /bin/sh -c #(nop)  EXPOSE 443/tcp 80/tcp        0 B
+<missing>           4 weeks ago         /bin/sh -c ln -sf /dev/stdout /var/log/nginx/   22 B
+<missing>           4 weeks ago         /bin/sh -c apt-key adv --keyserver hkp://pgp.   58.46 MB
+<missing>           4 weeks ago         /bin/sh -c #(nop)  ENV NGINX_VERSION=1.11.5-1   0 B
+<missing>           4 weeks ago         /bin/sh -c #(nop)  MAINTAINER NGINX Docker Ma   0 B
+<missing>           4 weeks ago         /bin/sh -c #(nop)  CMD ["/bin/bash"]            0 B
+<missing>           4 weeks ago         /bin/sh -c #(nop) ADD file:23aa4f893e3288698c   123 MB
+
+
+#使用dockerfile定制镜像
+#空白目录中，建立一个文本文件，并命名为 Dockerfile   。mkdir 建立一个目录，cd进入目录，touch 创建文件
+$ mkdir mynginx
+$ cd mynginx
+$ touch Dockerfile
+
+#dockerfile中内容为
+FROM nginx
+RUN echo '<h1>Hello, Docker!</h1>' > /usr/share/nginx/html/index.html
+
+#FROM 指定基础镜像
+#RUN执行命令
+#shell格式 、exec 格式：RUN ["可执行文件", "参数1", "参数2"]，这更像是函数调用中的格式。
+RUN echo '<h1>Hello, Docker!</h1>' > /usr/share/nginx/html/index.html
+#多个RUN 使用 \ 换行  && 连接
+
+#删除编译构建的软件，下载、展开的文件，apt缓存文件
+FROM debian:stretch
+
+RUN set -x; buildDeps='gcc libc6-dev make wget' \
+    && apt-get update \
+    && apt-get install -y $buildDeps \
+    && wget -O redis.tar.gz "http://download.redis.io/releases/redis-5.0.3.tar.gz" \
+    && mkdir -p /usr/src/redis \
+    && tar -xzf redis.tar.gz -C /usr/src/redis --strip-components=1 \
+    && make -C /usr/src/redis \
+    && make -C /usr/src/redis install \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm redis.tar.gz \
+    && rm -r /usr/src/redis \
+    && apt-get purge -y --auto-remove $buildDeps
+
+#构建镜像        在 Dockerfile 文件所在目录执行:        启动容器9cdc27646c7b，执行命令后提交这一层44aa4490ce2c，删除了容器9cdc27646c7b。期间创建的每一个新的镜像层都是一个临时的容器，但是构建完每一层就会自动删除
+
+$ docker build -t nginx:v3 .
+Sending build context to Docker daemon 2.048 kB
+Step 1 : FROM nginx
+ ---> e43d811ce2f4
+Step 2 : RUN echo '<h1>Hello, Docker!</h1>' > /usr/share/nginx/html/index.html
+ ---> Running in 9cdc27646c7b
+ ---> 44aa4490ce2c
+Removing intermediate container 9cdc27646c7b
+Successfully built 44aa4490ce2c
+
+#镜像构建上下文，理解上下文路径  Sending build context to Docker daemon 2.048 kB，不要理解为相对路径。"." 指定了上下文的目录是当前目录，也就是dockerfile所在的目录，这个过程是docker build 将这个目录下的文件打包发送到docker引擎帮助构建镜像。默认情况不额外指定 Dockerfile 的话，会将上下文目录下的名为 Dockerfile 的文件作为 Dockerfile。实际上 Dockerfile 的文件名并不要求必须为 Dockerfile，而且并不要求必须位于上下文目录中，比如可以用 -f ../Dockerfile.php 参数指定某个文件作为 Dockerfile。
+
+
+
+#docker build 还支持从 URL 构建，比如可以直接从 Git repo 中构建
+# $env:DOCKER_BUILDKIT=0
+# export DOCKER_BUILDKIT=0
+
+$ docker build -t hello-world https://github.com/docker-library/hello-world.git#master:amd64/hello-world
+
+Step 1/3 : FROM scratch
+ --->
+Step 2/3 : COPY hello /
+ ---> ac779757d46e
+Step 3/3 : CMD ["/hello"]
+ ---> Running in d2a513a760ed
+Removing intermediate container d2a513a760ed
+ ---> 038ad4142d2b
+Successfully built 038ad4142d2b
+
+#用给定的 tar 压缩包构建
+$ docker build http://server/context.tar.gz
+
+#从标准输入中读取 Dockerfile 进行构建：两种写法
+docker build - < Dockerfile   
+cat Dockerfile | docker build -
+
+#从标准输入中读取上下文压缩包进行构建
+$ docker build - < context.tar.gz
+
+#dockerfile指令
+
+#COPY  格式：COPY [--chown=<user>:<group>] <源路径>... <目标路径>      COPY [--chown=<user>:<group>] ["<源路径1>",... "<目标路径>"]
+#从构建上下文目录中 <源路径> 的文件/目录复制到新的一层的镜像内的 <目标路径> 位置。
+COPY package.json /usr/src/app/
+
+#<源路径> 可以是多个，甚至可以是通配符，其通配符规则要满足 Go 的 filepath.Match 规则
+COPY hom* /mydir/
+COPY hom?.txt /mydir/
+
+#<目标路径> 可以是容器内的绝对路径，也可以是相对于工作目录的相对路径（工作目录可以用 WORKDIR 指令来指定）。目标路径不需要事先创建，如果目录不存在会在复制文件前先行创建缺失目录
+#可以加上 --chown=<user>:<group> 选项来改变文件的所属用户及所属组。
+COPY --chown=55:mygroup files* /mydir/
+COPY --chown=bin files* /mydir/
+COPY --chown=1 files* /mydir/
+COPY --chown=10:11 files* /mydir/
+
+#ADD  不推荐使用，尽可能使用COPY
+#<源路径> 为一个 tar 压缩文件的话，压缩格式为 gzip, bzip2 以及 xz 的情况下，ADD 指令将会自动解压缩这个压缩文件到 <目标路径> 去。在某些情况下，这个自动解压缩的功能非常有用，比如官方镜像 ubuntu 中：
+FROM scratch
+ADD ubuntu-xenial-core-cloudimg-amd64-root.tar.gz /
+...
+
+#CMD容器命令：C用于指定默认的容器主进程的启动命令的。
+#Docker不是虚拟机，容器是进程
+#ubuntu 镜像默认的 CMD 是 /bin/bash，如果我们直接 docker run -it ubuntu 的话，会直接进入 bash。我们也可以在运行时指定运行别的命令，如 docker run -it ubuntu cat /etc/os-release。这就是用 cat /etc/os-release 命令替换了默认的 /bin/bash 命令了，输出了系统版本信息。
+#使用 exec 格式，这类格式在解析时会被解析为 JSON 数组，因此一定要使用双引号 "，而不要使用单引号。
+
+
+
+#CMD service nginx start   结束后直接退出了容器
+#对于容器而言，其启动程序就是容器应用进程，容器就是为了主进程而存在的，主进程退出，容器就失去了存在的意义，从而退出，其它辅助进程不是它需要关心的东西。使用 service nginx start 命令，则是希望 upstart 来以后台守护进程形式启动 nginx 服务。而刚才说了 CMD service nginx start 会被理解为 CMD [ "sh", "-c", "service nginx start"]，因此主进程实际上是 sh。那么当 service nginx start 命令结束后，sh 也就结束了，sh 作为主进程退出了，自然就会令容器退出
+
+#正确的做法是直接执行 nginx 可执行文件，并且要求以前台形式运行。比如：
+CMD ["nginx", "-g", "daemon off;"]
+
+#ENTRYPOINT 入口点，类似于CMD ，可以将CMD的内容作为参数传给ENTRYPOINT
+
+FROM ubuntu:18.04
+RUN apt-get update \
+    && apt-get install -y curl \
+    && rm -rf /var/lib/apt/lists/*
+CMD [ "curl", "-s", "http://myip.ipip.net" ]
+
+$ docker run myip
+当前 IP：61.148.226.66 来自：北京市 联通
+
+#直接 docker run myip -i， 跟在镜像名后面的是 command，运行时会替换 CMD 的默认值。因此这里的 -i 替换了原来的 CMD，而不是添加在原来的 curl -s http://myip.ipip.net 后面。而 -i 根本不是命令，所以自然找不到。
+
+FROM ubuntu:18.04
+RUN apt-get update \
+    && apt-get install -y curl \
+    && rm -rf /var/lib/apt/lists/*
+ENTRYPOINT [ "curl", "-s", "http://myip.ipip.net" ]
+
+$ docker run myip
+当前 IP：61.148.226.66 来自：北京市 联通
+
+$ docker run myip -i
+HTTP/1.1 200 OK
+Server: nginx/1.8.0
+Date: Tue, 22 Nov 2016 05:12:40 GMT
+Content-Type: text/html; charset=UTF-8
+Vary: Accept-Encoding
+X-Powered-By: PHP/5.6.24-1~dotdeb+7.1
+X-Cache: MISS from cache-2
+X-Cache-Lookup: MISS from cache-2:80
+X-Cache: MISS from proxy-2_6
+Transfer-Encoding: chunked
+Via: 1.1 cache-2:80, 1.1 proxy-2_6:8006
+Connection: keep-alive
+
+当前 IP：61.148.226.66 来自：北京市 联通
+
+#因为当存在 ENTRYPOINT 后，CMD 的内容将会作为参数传给 ENTRYPOINT，而这里 -i 就是新的 CMD，因此会作为参数传给 curl，从而达到了我们预期的效果。
+
+#利用ENTRYPOINT进行前置工作，msql配置和初始化，避免root用户启动服务之前使用root用户做必要准备工作等等
+
+#EVN设置环境变量：无论是后面的其它指令，如 RUN，还是运行时的应用，都可以直接使用这里定义的环境变量。\换行
+ENV VERSION=1.0 DEBUG=on \
+    NAME="Happy Feet"
+#定义了环境变量，那么在后续的指令中，就可以使用这个环境变量。如在官方 node 镜像 Dockerfile 中，升级镜像构建版本的时候，只需要更新 7.2.0 即可，Dockerfile 构建维护变得更轻松了（相当于替代具体的版本，做成变量）：
+ENV NODE_VERSION 7.2.0
+
+RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
+  && curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc" \
+  && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
+  && grep " node-v$NODE_VERSION-linux-x64.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+  && tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 \
+  && rm "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs
+
+#ARG 构建参数   灵活的使用 ARG 指令，能够在不修改 Dockerfile 的情况下，构建出不同的镜像。ARG 指令有生效范围，如果在 FROM 指令之前指定，那么只能用于 FROM 指令中
+
+# 这个变量在每个 FROM 中都生效
+ARG DOCKER_USERNAME=library
+FROM ${DOCKER_USERNAME}/alpine
+RUN set -x ; echo 1
+FROM ${DOCKER_USERNAME}/alpine
+RUN set -x ; echo 2
+
+#对于上述 Dockerfile 两个 FROM 指令都可以使用 ${DOCKER_USERNAME}，对于在各个阶段中使用的变量都必须在每个阶段分别指定：
+
+ARG DOCKER_USERNAME=library
+FROM ${DOCKER_USERNAME}/alpine
+# 在FROM 之后使用变量，必须在每个阶段分别指定
+ARG DOCKER_USERNAME=library
+RUN set -x ; echo ${DOCKER_USERNAME}
+FROM ${DOCKER_USERNAME}/alpine
+# 在FROM 之后使用变量，必须在每个阶段分别指定
+ARG DOCKER_USERNAME=library
+RUN set -x ; echo ${DOCKER_USERNAME}
+
+
+#VOLUME 定义匿名卷
+VOLUME /data
+#这里的 /data 目录就会在容器运行时自动挂载为匿名卷，任何向 /data 中写入的信息都不会记录进容器存储层，从而保证了容器存储层的无状态化。当然，运行容器时可以覆盖这个挂载设置
+
+$ docker run -d -v mydata:/data xxxx
+#mydata 这个命名卷挂载到了 /data 这个位置，替代了 Dockerfile 中定义的匿名卷的挂载配置。
+
+$EXPOSE 暴露端口:      声明容器运行时提供服务的端口,在容器运行时并不会因为这个声明应用就会开启这个端口的服务。在 Dockerfile 中写入这样的声明有两个好处，一个是帮助镜像使用者理解这个镜像服务的守护端口，以方便配置映射；另一个用处则是在运行时使用随机端口映射时，也就是 docker run -P 时，会自动随机映射 EXPOSE 的端口。
+要将 EXPOSE 和在运行时使用 -p <宿主端口>:<容器端口> 区分开来。-p，是映射宿主端口和容器端口，换句话说，就是将容器的对应端口服务公开给外界访问，而 EXPOSE 仅仅是声明容器打算使用什么端口而已，并不会自动在宿主进行端口映射。
+
+EXPOSE <端口1> [<端口2>...]
+
+#WORKDIR 指定工作目录
+RUN cd /app
+RUN echo "hello" > world.txt
+#此例中，Dockfile构建镜像时，两个RUN执行的环境不同，是两个不同的容器，每一个 RUN 都是启动一个容器、执行命令、然后提交存储层文件变更。 第一层执行只是当前进程的工作目录变更，内存上的变化，没有文件变更，但第一层的容器结束时，对第二层没有影响，第二层也不会继承第一层的内存变化，若要更改以后每层的工作目录位置：
+WORKDIR /app
+RUN echo "hello" > world.txt
+#如果 WORKDIR 指令使用的相对路径，那么所切换的路径与之前的 WORKDIR 有关：  RUN pwd 的工作目录为 /a/b/c
+WORKDIR /
+WORKDIR b
+WORKDIR c
+
+RUN pwd
+
+#USER 指定当前用户：USER 指令和 WORKDIR 相似，都是改变环境状态并影响以后的层。WORKDIR 是改变工作目录，USER 则是改变之后层的执行 RUN, CMD 以及 ENTRYPOINT 这类命令的身份
+#用户必须是事前建立好的
+RUN groupadd -r redis && useradd -r -g redis redis
+USER redis
+RUN [ "redis-server" ]
+
+
+#以 root 执行的脚本，在执行期间希望改变身份
+
+# 建立 redis 用户，并使用 gosu 换另一个用户执行命令
+RUN groupadd -r redis && useradd -r -g redis redis
+# 下载 gosu
+RUN wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.12/gosu-amd64" \
+    && chmod +x /usr/local/bin/gosu \
+    && gosu nobody true
+# 设置 CMD，并以另外的用户执行
+CMD [ "exec", "gosu", "redis", "redis-server" ]
+
+#HEALTHCHECK 健康检查
+--interval=<间隔>：两次健康检查的间隔，默认为 30 秒；
+--timeout=<时长>：健康检查命令运行超时时间，如果超过这个时间，本次健康检查就被视为失败，默认 30 秒；
+--retries=<次数>：当连续失败指定次数后，则将容器状态视为 unhealthy，默认 3 次
+#和CMD, ENTRYPOINT 一样，HEALTHCHECK 只可以出现一次，如果写了多个，只有最后一个生效
+
+#有个镜像是个最简单的 Web 服务，我们希望增加健康检查来判断其 Web 服务是否在正常工作，我们可以用 curl 来帮助判断，其 Dockerfile 的 HEALTHCHECK 可以这么写：
+FROM nginx
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+HEALTHCHECK --interval=5s --timeout=3s \
+  CMD curl -fs http://localhost/ || exit 1
+
+#使用 docker build 来构建这个镜像：
+$ docker build -t myweb:v1 .
+#启动一个容器
+$ docker run -d --name web -p 80:80 myweb:v1
+
+#docker container ls 看到最初的状态为 (health: starting)
+$ docker container ls
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                            PORTS               NAMES
+03e28eb00bd0        myweb:v1            "nginx -g 'daemon off"   3 seconds ago       Up 2 seconds (health: starting)   80/tcp, 443/tcp     web
+#几秒钟后
+$ docker container ls
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                    PORTS               NAMES
+03e28eb00bd0        myweb:v1            "nginx -g 'daemon off"   18 seconds ago      Up 16 seconds (healthy)   80/tcp, 443/tcp     web
+
+#Dockerfile 中的其它指令都是为了定制当前镜像而准备的，唯有 ONBUILD 是为了帮助别人定制自己而准备
+#修改了dockerfile之后，其他项目dockerfile不会被自动修复
+#生成一个基础镜像，各个项目不用同步dockerfile的变化，重新构建后就继承了基础镜像的更新
+
+FROM node:slim
+RUN mkdir /app
+WORKDIR /app
+ONBUILD COPY ./package.json /app
+ONBUILD RUN [ "npm", "install" ]
+ONBUILD COPY . /app/
+CMD [ "npm", "start" ]
+
+#在构建基础镜像的时候，这三行并不会被执行。然后各个项目的 Dockerfile 就变成了简单地
+FROM my-node
+
+#当在各个项目目录中，用这个只有一行的 Dockerfile 构建镜像时，之前基础镜像的那三行 ONBUILD 就会开始执行，成功的将当前项目的代码复制进镜像、并且针对本项目执行 npm install，生成应用镜像。
+
+#LABEL 为镜像添加元数据,给镜像以键值对的形式添加一些元数据
+LABEL <key>=<value> <key>=<value> <key>=<value> ...
+#我们还可以用一些标签来申明镜像的作者、文档地址等
+LABEL org.opencontainers.image.authors="yeasy"
+LABEL org.opencontainers.image.documentation="https://yeasy.gitbooks.io"
+
+#多阶段构建
+#编写 Dockerfile 文件
+FROM golang:alpine as builder
+RUN apk --no-cache add git
+WORKDIR /go/src/github.com/go/helloworld/
+RUN go get -d -v github.com/go-sql-driver/mysql
+COPY app.go .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+FROM alpine:latest as prod
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=0 /go/src/github.com/go/helloworld/app .
+CMD ["./app"]
+
+#构建镜像
+$ docker build -t go/helloworld:3 .
+
+
+#容器启动
+$ docker run ubuntu:18.04 /bin/echo 'Hello world'
+
+#启动一个 bash 终端，允许用户进行交互 
+$ docker run -t -i ubuntu:18.04 /bin/bash
+root@af8bae53bdd3:/#
+
+#已经终止（exited）的容器启动运行
+docker container start
+
+
+#守护态运行
+
+#容器会把输出的结果 (STDOUT) 打印到宿主机上面
+$ docker run ubuntu:18.04 /bin/sh -c "while true; do echo hello world; sleep 1; done"
+hello world
+hello world
+hello world
+hello world
+
+$ docker run -d ubuntu:18.04 /bin/sh -c "while true; do echo hello world; sleep 1; done"
+77b2dc01fe0f3f1265df143181e7b9af5e05279a884f4776ee75350ea9d8017a
+
+$ docker container ls
+CONTAINER ID  IMAGE         COMMAND               CREATED        STATUS       PORTS NAMES
+77b2dc01fe0f  ubuntu:18.04  /bin/sh -c 'while tr  2 minutes ago  Up 1 minute        agitated_wright
+#获取容器的输出信息，可以通过 docker container logs 命令
+$ docker container logs [container ID or NAMES]
+hello world
+hello world
+hello world
+. . .
+
+#终止容器
+docker container stop 
+#只启动一个终端 ，通过 exit 命令或 Ctrl+d 来退出终端时，所创建的容器立刻终止。
+
+#终止状态的容器
+$ docker container ls -a
+CONTAINER ID        IMAGE                    COMMAND                CREATED             STATUS                          PORTS               NAMES
+ba267838cc1b        ubuntu:18.04             "/bin/bash"            30 minutes ago      Exited (0) About a minute ago                       trusting_newton
+#终止状态的容器重新启动
+docker container start
+#运行态容器先终止，再重新启动
+docker container restart
+
+#在使用 -d 参数时，容器启动后会进入后台，需要进入容器操作时使用attach / exec 命令，attach下exit容器停止，exec下exit不会停止，-t可以出linux命令提示符
+$ docker exec -it 69d1 bash
+root@69d137adef7a:/#
+
+#容器导出
+$ docker container ls -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                    PORTS               NAMES
+7691a814370e        ubuntu:18.04        "/bin/bash"         36 hours ago        Exited (0) 21 hours ago                       test
+$ docker export 7691a814370e > ubuntu.tar
+
+#docker import 从容器快照文件中再导入为镜像
+$ cat ubuntu.tar | docker import - test/ubuntu:v1.0
+$ docker image ls
+REPOSITORY          TAG                 IMAGE ID            CREATED              VIRTUAL SIZE
+test/ubuntu         v1.0                9d37a6082e97        About a minute ago   171.3 MB
+
+#通过指定 URL 或者某个目录来导入
+$ docker import http://example.com/exampleimage.tgz example/imagerepo
+
+#docker load 来导入镜像存储文件到本地镜像库，也可以使用 docker import 来导入一个容器快照到本地镜像库
+
+#删除容器
+#docker container rm 来删除一个处于终止状态的容器
+$ docker container rm trusting_newton
+trusting_newton
+
+#docker container ls -a 命令可以查看所有已经创建的包括终止状态的容器
+#清理所有处于终止状态的容器
+$ docker container prune
+
+
+#访问仓库
+#拉取镜像：通过 docker search 命令来查找官方仓库中的镜像，并利用 docker pull 命令来将它下载到本地
+$ docker search centos
+NAME                               DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+centos                             The official build of CentOS.                   6449      [OK]
+ansible/centos7-ansible            Ansible on Centos7                              132                  [OK]
+consol/centos-xfce-vnc             Centos container with "headless" VNC session…   126                  [OK]
+jdeathe/centos-ssh                 OpenSSH / Supervisor / EPEL/IUS/SCL Repos - …   117                  [OK]
+centos/systemd                     systemd enabled base container.                 96                   [OK]
+
+$ docker pull centos
+Using default tag: latest
+latest: Pulling from library/centos
+7a0437f04f83: Pull complete
+Digest: sha256:5528e8b1b1719d34604c87e11dcd1c0a20bedf46e83b5632cdeac91b8c04efc1
+Status: Downloaded newer image for centos:latest
+docker.io/library/centos:latest
+
+
+#推送镜像
+$ docker tag ubuntu:18.04 username/ubuntu:18.04
+
+$ docker image ls
+
+REPOSITORY                                               TAG                    IMAGE ID            CREATED             SIZE
+ubuntu                                                   18.04                  275d79972a86        6 days ago          94.6MB
+username/ubuntu                                          18.04                  275d79972a86        6 days ago          94.6MB
+
+$ docker push username/ubuntu:18.04
+
+$ docker search username
+
+NAME                      DESCRIPTION                                     STARS               OFFICIAL            AUTOMATED
+username/ubuntu
+
+#私有镜像
+#使用官方 registry 镜像来运行
+$ docker run -d -p 5000:5000 --restart=always --name registry registry
+
+#使用官方的 registry 镜像来启动私有仓库。默认情况下，仓库会被创建在容器的 /var/lib/registry 目录下，通过 -v 参数来将镜像文件存放在本地的指定路径
+$ docker run -d \
+    -p 5000:5000 \
+    -v /opt/data/registry:/var/lib/registry \
+    registry
+
+#先在本机查看已有的镜像
+$ docker image ls
+REPOSITORY                        TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+ubuntu                            latest              ba5877dc9bec        6 weeks ago         192.7 MB
+
+#使用 docker tag 将 ubuntu:latest 这个镜像标记为 127.0.0.1:5000/ubuntu:latest。
+$ docker tag ubuntu:latest 127.0.0.1:5000/ubuntu:latest
+$ docker image ls
+REPOSITORY                        TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+ubuntu                            latest              ba5877dc9bec        6 weeks ago         192.7 MB
+127.0.0.1:5000/ubuntu:latest      latest              ba5877dc9bec        6 weeks ago         192.7 MB
+
+#使用 docker push 上传标记的镜像
+$ docker push 127.0.0.1:5000/ubuntu:latest
+The push refers to repository [127.0.0.1:5000/ubuntu]
+373a30c24545: Pushed
+a9148f5200b0: Pushed
+cdd3de0940ab: Pushed
+fc56279bbb33: Pushed
+b38367233d37: Pushed
+2aebd096e0e2: Pushed
+latest: digest: sha256:fe4277621f10b5026266932ddf760f5a756d2facd505a94d2da12f4f52f71f5a size: 1568
+
+#用 curl 查看仓库中的镜像
+$ curl 127.0.0.1:5000/v2/_catalog
+{"repositories":["ubuntu"]}
+
+#先删除已有镜像，再尝试从私有仓库中下载这个镜像。
+$ docker image rm 127.0.0.1:5000/ubuntu:latest
+
+$ docker pull 127.0.0.1:5000/ubuntu:latest
+Pulling repository 127.0.0.1:5000/ubuntu:latest
+ba5877dc9bec: Download complete
+511136ea3c5a: Download complete
+9bad880da3d2: Download complete
+25f11f5fb0cb: Download complete
+ebc34468f71d: Download complete
+2318d26665ef: Download complete
+
+$ docker image ls
+REPOSITORY                         TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+127.0.0.1:5000/ubuntu:latest       latest              ba5877dc9bec        6 weeks ago         192.7 MB
+
+#Ubuntu 16.04+, Debian 8+, centos 7对于使用 systemd 的系统，请在 /etc/docker/daemon.json 中写入如下内容（如果文件不存在请新建该文件）
+{
+  "registry-mirrors": [
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com"
+  ],
+  "insecure-registries": [
+    "192.168.199.100:5000"
+  ]
+}
+
+
+#数据卷
+#数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：
+数据卷 可以在容器之间共享和重用
+对 数据卷 的修改会立马生效
+对 数据卷 的更新，不会影响镜像
+数据卷 默认会一直存在，即使容器被删除
+
+
+#创建一个数据卷
+$ docker volume create my-vol
+#查看所有的 数据卷
+$ docker volume ls
+
+DRIVER              VOLUME NAME
+local               my-vol
+
+#在主机里使用以下命令可以查看指定 数据卷 的信息
+$ docker volume inspect my-vol
+[
+    {
+        "Driver": "local",
+        "Labels": {},
+        "Mountpoint": "/var/lib/docker/volumes/my-vol/_data",
+        "Name": "my-vol",
+        "Options": {},
+        "Scope": "local"
+    }
+]
+
+#启动一个挂载数据卷的容器。在用 docker run 命令的时候，使用 --mount 标记来将 数据卷 挂载到容器里。在一次 docker run 中可以挂载多个 数据卷。
+#下面创建一个名为 web 的容器，并加载一个 数据卷 到容器的 /usr/share/nginx/html 目录
+$ docker run -d -P \
+    --name web \
+    # -v my-vol:/usr/share/nginx/html \
+    --mount source=my-vol,target=/usr/share/nginx/html \
+    nginx:alpine
+
+
+#查看 web 容器的信息
+$ docker inspect web
+#数据卷 信息在 "Mounts" Key 下面
+"Mounts": [
+    {
+        "Type": "volume",
+        "Name": "my-vol",
+        "Source": "/var/lib/docker/volumes/my-vol/_data",
+        "Destination": "/usr/share/nginx/html",
+        "Driver": "local",
+        "Mode": "",
+        "RW": true,
+        "Propagation": ""
+    }
+],
+
+
+
+#删除数据卷  
+$ docker volume rm my-vol
+#删除容器的同时移除数据卷。可以在删除容器的时候使用 docker rm -v 这个命令。
+
+#无主的数据卷可能会占据很多空间，要清理请使用以下命令
+$ docker volume prune
+
+
+#挂载一个主机目录作为数据卷
+$ docker run -d -P \
+    --name web \
+    # -v /src/webapp:/usr/share/nginx/html \
+    --mount type=bind,source=/src/webapp,target=/usr/share/nginx/html \
+    nginx:alpine
+
+#加载主机的 /src/webapp 目录到容器的 /usr/share/nginx/html目录。这个功能在进行测试的时候十分方便，比如用户可以放置一些程序到本地目录中，来查看容器是否正常工作。本地目录的路径必须是绝对路径，
+
+#Docker 挂载主机目录的默认权限是 读写，用户也可以通过增加 readonly 指定为 只读
+$ docker run -d -P \
+    --name web \
+    # -v /src/webapp:/usr/share/nginx/html:ro \
+    --mount type=bind,source=/src/webapp,target=/usr/share/nginx/html,readonly \
+    nginx:alpine
+
+#挂载一个本地主机文件作为数据卷
+$ docker run --rm -it \
+   # -v $HOME/.bash_history:/root/.bash_history \
+   --mount type=bind,source=$HOME/.bash_history,target=/root/.bash_history \
+   ubuntu:18.04 \
+   bash
+
+root@2affd44b4667:/# history
+1  ls
+2  diskutil list
+#可以记录在容器输入过的命令了
+
+############################################
+#Dockerfile 直接在vscode里生成，没有后缀  ，如果有后缀，可以加上后缀，也可以成功构建镜像
+#构建镜像
+docker build -it ubuntu:pytest .
+
+
+attach 可以直接到原本的容器中   exec不行
+docker attach 8c50  #会接原本第一次run起来的终端，会有终端打印信息，exit也会将容器停掉
+docker exec -it 8c50 dash #报错把dash换成sh  这是新的一个终端，所以不会有终端上的打印信息，exit也不会影响容易
+
+
+docker run ubuntu:pytest  #把容器起起来
+
+docker container ls -a  #查看所有容器
+docker container start 8c50  #重启容器
+
+dockerfile中python类文件需要添加依赖
+RUN pip install -r requirements.txt  #如果报错，这句之前写  RUN pip freeze > requirements.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
