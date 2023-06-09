@@ -678,9 +678,11 @@ git push -u origin master
 
 
 **************************************************************************************************************
+#查看当前orientlab镜像版本
+env | grep IMAGE 
 
-
-
+from algoqi.toolbox.image import get_current_orientlab_image
+get_current_orientlab_image()
 
 
 #获取镜像：从 Docker 镜像仓库获取镜像的命令是 docker pull
