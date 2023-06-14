@@ -589,6 +589,20 @@ for i in range(1000):
         time.sleep(2)
     except:
         time.sleep(2)
+        
+**************************************************************************************************************
+
+def data_to_csv(*variate):
+    '''将输入的dataframe格式  输出为csv格式文件
+        输入的list格式，提取list中所有df，分别输出csv文件'''
+    for var_i in variate:
+        if type(var_i) is type(pd.DataFrame()):
+            var_i.to_csv(var_i.columns.name+'.csv',index=False)
+        elif type(var_i) is type(list()):
+            for i in range(len(var_i)):
+                var_i[i].to_csv(var_i[i].columns.name+'.csv',index=False)
+    
+data_to_csv(factor_data,factor_data_c_time_label,factor_data_time_label,factor_data_c_time_label_list,factor_list )
 
 **************************************************************************************************************
 #修改host，提升登录github速度
@@ -672,7 +686,7 @@ git config --local --list
 git push -u origin master
 
 
-
+http://10.45.8.246:80
 
 
 
